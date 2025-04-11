@@ -6,6 +6,12 @@ __pycache__/
 # Arquivos de dados
 *.csv
 *.json
+*.xlsx
+*.xls
+*.docx
+*.doc
+*.pptx
+*.ppt
 
 # Arquivos de imagem
 *.jpg
