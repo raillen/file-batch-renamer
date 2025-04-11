@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Arquivos de dados
+*.csv
+*.json
+
+# Arquivos de imagem
+*.jpg
+*.jpeg
+*.png
+*.gif
+*.bmp
+*.tiff
+*.webp
+
+# Arquivos do sistema
+.DS_Store
+Thumbs.db 
