@@ -1,7 +1,35 @@
-# Python
+# Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 *$py.class
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+
+# Virtual environments
+venv/
+env/
+.env/
+
+# IDE specific files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs and databases
+*.log
+*.sqlite
+*.db
+
+# Arquivos de sistema
+.DS_Store
+Thumbs.db
+
+# Arquivos do projeto
+rename_history.json
 
 # Arquivos de dados
 *.csv
