@@ -1,7 +1,7 @@
 import os
 from PyQt5.QtWidgets import (QMainWindow, QPushButton, QFileDialog, QLabel, 
                             QLineEdit, QVBoxLayout, QHBoxLayout, QWidget,
-                            QMessageBox, QMenuBar, QAction, QToolButton)
+                            QMessageBox, QMenuBar, QAction, QToolButton, QMenu)
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont
 
@@ -12,6 +12,7 @@ from core.file_manager import FileManager
 from core.csv_manager import CSVManager
 from core.history_manager import HistoryManager
 from core.preview_manager import PreviewManager
+from core.language_manager import LanguageManager
 
 class BatchRenamer(QMainWindow):
     def __init__(self):
@@ -24,6 +25,10 @@ class BatchRenamer(QMainWindow):
             os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "rename_history.json")
         )
         self.preview_manager = PreviewManager()
+        self.language_manager = LanguageManager()
+        
+        # Conecta o sinal de mudança de idioma
+        self.language_manager.language_changed.connect(self.update_ui_text)
         
         self.init_ui()
         self.setup_connections()
@@ -55,33 +60,55 @@ class BatchRenamer(QMainWindow):
         main_widget.setLayout(main_layout)
         self.setCentralWidget(main_widget)
         
+        # Atualiza os textos da interface
+        self.update_ui_text()
+        
     def create_menu_bar(self):
         """Cria a barra de menus"""
         menu_bar = self.menuBar()
         
         # Menu Arquivo
-        file_menu = menu_bar.addMenu("&Arquivo")
+        self.file_menu = menu_bar.addMenu(self.language_manager.get_text("file_menu"))
         
-        open_csv_action = QAction("Abrir CSV", self)
-        open_csv_action.triggered.connect(self.open_csv)
-        file_menu.addAction(open_csv_action)
+        # Ações do menu Arquivo
+        self.open_csv_action = QAction(self.language_manager.get_text("open_csv"), self)
+        self.open_csv_action.triggered.connect(self.open_csv)
+        self.file_menu.addAction(self.open_csv_action)
         
-        open_folder_action = QAction("Abrir Pasta", self)
-        open_folder_action.triggered.connect(self.open_folder)
-        file_menu.addAction(open_folder_action)
+        self.open_folder_action = QAction(self.language_manager.get_text("open_folder"), self)
+        self.open_folder_action.triggered.connect(self.open_folder)
+        self.file_menu.addAction(self.open_folder_action)
         
-        file_menu.addSeparator()
+        self.file_menu.addSeparator()
         
-        exit_action = QAction("Sair", self)
-        exit_action.triggered.connect(self.close)
-        file_menu.addAction(exit_action)
+        # Menu de idiomas
+        self.language_menu = QMenu(self.language_manager.get_text("language_menu"), self)
+        self.file_menu.addMenu(self.language_menu)
+        
+        # Ações do menu de idiomas
+        self.english_action = QAction(self.language_manager.get_text("english"), self)
+        self.english_action.triggered.connect(lambda: self.language_manager.set_language("en"))
+        self.language_menu.addAction(self.english_action)
+        
+        self.portuguese_action = QAction(self.language_manager.get_text("portuguese"), self)
+        self.portuguese_action.triggered.connect(lambda: self.language_manager.set_language("pt"))
+        self.language_menu.addAction(self.portuguese_action)
+        
+        self.spanish_action = QAction(self.language_manager.get_text("spanish"), self)
+        self.spanish_action.triggered.connect(lambda: self.language_manager.set_language("es"))
+        self.language_menu.addAction(self.spanish_action)
+        
+        self.file_menu.addSeparator()
+        
+        self.exit_action = QAction(self.language_manager.get_text("exit"), self)
+        self.exit_action.triggered.connect(self.close)
+        self.file_menu.addAction(self.exit_action)
         
         # Menu Sobre
-        about_menu = menu_bar.addMenu("&Sobre")
-        
-        donate_action = QAction("Doar", self)
-        donate_action.triggered.connect(self.show_donate_dialog)
-        about_menu.addAction(donate_action)
+        self.about_menu = menu_bar.addMenu(self.language_manager.get_text("about_menu"))
+        self.about_action = QAction(self.language_manager.get_text("about"), self)
+        self.about_action.triggered.connect(self.show_about)
+        self.about_menu.addAction(self.about_action)
         
     def create_left_panel(self):
         """Cria o painel esquerdo"""
@@ -469,12 +496,15 @@ class BatchRenamer(QMainWindow):
         """Lida com seleção de arquivo"""
         file_path = os.path.join(self.file_manager.folder_path, file_name)
         self.preview_manager.set_current_file(file_path)
-        preview_data, tooltip = self.preview_manager.get_preview()
+        preview_data, message = self.preview_manager.get_preview()
         if preview_data:
-            self.preview_panel.set_preview(preview_data, tooltip)
-            self.preview_panel.set_file_path(file_path)
+            self.preview_panel.set_preview(preview_data, file_path)
+            if message:
+                self.preview_panel.content_label.setToolTip(message)
         else:
             self.preview_panel.clear_preview()
+            if message:
+                self.preview_panel.content_label.setText(message)
             
     def handle_file_renamed(self, old_name, new_name):
         """Lida com renomeação de arquivo"""
@@ -507,12 +537,45 @@ class BatchRenamer(QMainWindow):
         except Exception as e:
             QMessageBox.critical(self, "Erro", f"Erro ao abrir arquivo: {str(e)}")
             
-    def show_donate_dialog(self):
-        """Mostra diálogo de doação"""
+    def show_about(self):
+        """Mostra diálogo de informações sobre o programa"""
         QMessageBox.information(
             self,
-            "Doar",
-            "Obrigado pelo seu interesse em apoiar este projeto!\n\n"
-            "Email do PayPal: placeholder@example.com\n"
-            "Chave PIX: placeholder-pix-key"
-        ) 
+            "Sobre",
+            "Renomeador em Lote\n\n"
+            "Versão: 1.0\n"
+            "Desenvolvido por: Seu Nome\n"
+            "Contato: seu.email@example.com"
+        )
+        
+    def update_ui_text(self):
+        # Atualiza os textos da barra de menus
+        self.file_menu.setTitle(self.language_manager.get_text("file_menu"))
+        self.about_menu.setTitle(self.language_manager.get_text("about_menu"))
+        
+        # Atualiza os textos das ações do menu Arquivo
+        self.open_csv_action.setText(self.language_manager.get_text("open_csv"))
+        self.open_folder_action.setText(self.language_manager.get_text("open_folder"))
+        self.language_menu.setTitle(self.language_manager.get_text("language_menu"))
+        self.english_action.setText(self.language_manager.get_text("english"))
+        self.portuguese_action.setText(self.language_manager.get_text("portuguese"))
+        self.spanish_action.setText(self.language_manager.get_text("spanish"))
+        self.exit_action.setText(self.language_manager.get_text("exit"))
+        
+        # Atualiza os textos do menu Sobre
+        self.about_action.setText(self.language_manager.get_text("about"))
+        
+        # Atualiza os textos dos botões
+        self.csv_button.setText(self.language_manager.get_text("open_csv"))
+        self.folder_button.setText(self.language_manager.get_text("open_folder"))
+        self.reload_button.setText(self.language_manager.get_text("reload_files"))
+        self.rename_button.setText(self.language_manager.get_text("rename_files"))
+        self.undo_button.setText(self.language_manager.get_text("undo_rename"))
+        
+        # Atualiza os placeholders
+        self.extensions_field.setPlaceholderText(self.language_manager.get_text("extensions"))
+        self.csv_search_field.setPlaceholderText(self.language_manager.get_text("search"))
+        self.files_search_field.setPlaceholderText(self.language_manager.get_text("search"))
+        
+        # Atualiza o título da janela
+        self.setWindowTitle(self.language_manager.get_text("file_menu")) 

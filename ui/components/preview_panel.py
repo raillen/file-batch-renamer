@@ -1,6 +1,7 @@
 from PyQt5.QtWidgets import (QLabel, QScrollArea, QVBoxLayout, QWidget)
-from PyQt5.QtCore import Qt, pyqtSignal
+from PyQt5.QtCore import Qt, pyqtSignal, QSize
 from PyQt5.QtGui import QPixmap
+from core.language_manager import LanguageManager
 
 class PreviewPanel(QWidget):
     # Sinais
@@ -8,75 +9,107 @@ class PreviewPanel(QWidget):
 
     def __init__(self, parent=None):
         super().__init__(parent)
+        self.language_manager = LanguageManager()
+        self.current_file_path = None
         self.setup_ui()
 
     def setup_ui(self):
         """Configura a interface do painel de visualização"""
-        layout = QVBoxLayout()
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
         
         # Título
-        title = QLabel("Visualização do Arquivo")
-        title.setAlignment(Qt.AlignCenter)
-        title.setStyleSheet("background-color: #888888; color: white; padding: 5px;")
-        layout.addWidget(title)
+        self.title_label = QLabel(self.language_manager.get_text("preview"))
+        self.title_label.setMaximumHeight(80)
+        self.title_label.setAlignment(Qt.AlignCenter)
+        self.title_label.setStyleSheet("background-color: #888888; color: white; padding: 5px;")
+        layout.addWidget(self.title_label)
         
-        # Área de rolagem para a visualização
+        # Área de rolagem para o conteúdo
         self.scroll_area = QScrollArea()
         self.scroll_area.setWidgetResizable(True)
         self.scroll_area.setMinimumHeight(200)
         self.scroll_area.setMaximumHeight(300)
-        
-        # Label para a visualização
-        self.preview_label = QLabel("Nenhum arquivo selecionado")
-        self.preview_label.setAlignment(Qt.AlignCenter)
-        self.preview_label.setStyleSheet("background-color: #f0f0f0;")
-        self.preview_label.setMouseTracking(True)
-        
-        # Conectar eventos do mouse
-        self.preview_label.mouseDoubleClickEvent = self.handle_double_click
-        
-        self.scroll_area.setWidget(self.preview_label)
+        self.scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        self.scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
         layout.addWidget(self.scroll_area)
         
-        self.setLayout(layout)
-
-    def set_preview(self, preview_data, tooltip=None):
-        """Define o conteúdo da visualização"""
-        if isinstance(preview_data, QPixmap):
-            # Se for uma imagem
-            self.preview_label.setPixmap(preview_data)
-            self.preview_label.setAlignment(Qt.AlignCenter)
-        else:
-            # Se for texto
-            self.preview_label.clear()
-            self.preview_label.setText(preview_data)
-            self.preview_label.setAlignment(Qt.AlignLeft | Qt.AlignTop)
-            self.preview_label.setWordWrap(True)
-            self.preview_label.setStyleSheet("background-color: #f0f0f0; padding: 10px; font-family: monospace;")
+        # Label para o conteúdo
+        self.content_label = QLabel()
+        self.content_label.setAlignment(Qt.AlignCenter)
+        self.content_label.setWordWrap(True)
+        self.content_label.setText(self.language_manager.get_text("no_file_selected"))
+        self.content_label.setStyleSheet("background-color: #f0f0f0;")
+        self.content_label.setMouseTracking(True)
+        self.scroll_area.setWidget(self.content_label)
         
-        if tooltip:
-            self.preview_label.setToolTip(tooltip)
+        # Conecta o evento de duplo clique
+        self.content_label.mouseDoubleClickEvent = self.handle_double_click
+
+    def resizeEvent(self, event):
+        """Reajusta o preview quando a janela é redimensionada"""
+        super().resizeEvent(event)
+        if self.current_file_path and isinstance(self.content_label.pixmap(), QPixmap):
+            self.adjust_preview_size()
+
+    def adjust_preview_size(self):
+        """Ajusta o tamanho do preview para caber na área disponível"""
+        if not self.current_file_path:
+            return
+            
+        pixmap = self.content_label.pixmap()
+        if not pixmap:
+            return
+            
+        # Obtém o tamanho disponível na scroll area
+        available_size = self.scroll_area.viewport().size()
+        
+        # Calcula a proporção para manter o aspecto
+        pixmap_size = pixmap.size()
+        ratio = min(
+            available_size.width() / pixmap_size.width(),
+            available_size.height() / pixmap_size.height()
+        )
+        
+        # Aplica o redimensionamento mantendo o aspecto
+        new_size = QSize(
+            int(pixmap_size.width() * ratio),
+            int(pixmap_size.height() * ratio)
+        )
+        
+        scaled_pixmap = pixmap.scaled(
+            new_size,
+            Qt.KeepAspectRatio,
+            Qt.SmoothTransformation
+        )
+        self.content_label.setPixmap(scaled_pixmap)
+
+    def set_preview(self, content, file_path=None):
+        """Define o conteúdo da visualização"""
+        self.current_file_path = file_path
+        if isinstance(content, QPixmap):
+            self.content_label.setPixmap(content)
+            self.adjust_preview_size()
         else:
-            self.preview_label.setToolTip("")
+            self.content_label.setText(str(content))
+            self.content_label.setScaledContents(False)
 
     def set_file_path(self, file_path):
         """Define o caminho do arquivo atual"""
-        self.preview_label.setProperty("current_file_path", file_path)
+        self.current_file_path = file_path
 
     def handle_double_click(self, event):
         """Lida com duplo clique no painel de visualização"""
-        file_path = self.preview_label.property("current_file_path")
-        if file_path:
-            self.file_double_clicked.emit(file_path)
+        if self.current_file_path:
+            self.file_double_clicked.emit(self.current_file_path)
         
         # Chama o método original
-        QLabel.mouseDoubleClickEvent(self.preview_label, event)
+        QLabel.mouseDoubleClickEvent(self.content_label, event)
 
     def clear_preview(self):
         """Limpa a visualização"""
-        self.preview_label.clear()
-        self.preview_label.setText("Nenhum arquivo selecionado")
-        self.preview_label.setAlignment(Qt.AlignCenter)
-        self.preview_label.setStyleSheet("background-color: #f0f0f0;")
-        self.preview_label.setProperty("current_file_path", None)
-        self.preview_label.setToolTip("") 
+        self.current_file_path = None
+        self.content_label.setText(self.language_manager.get_text("no_file_selected"))
+        self.content_label.setPixmap(None)
+        self.content_label.setToolTip("") 

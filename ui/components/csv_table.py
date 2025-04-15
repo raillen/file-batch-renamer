@@ -1,6 +1,7 @@
 from PyQt5.QtWidgets import (QTableWidget, QTableWidgetItem, QMenu, QAction,
                             QAbstractItemView)
 from PyQt5.QtCore import Qt, pyqtSignal
+from core.language_manager import LanguageManager
 
 class CSVTable(QTableWidget):
     # Sinais
@@ -10,12 +11,13 @@ class CSVTable(QTableWidget):
 
     def __init__(self, parent=None):
         super().__init__(parent)
+        self.language_manager = LanguageManager()
         self.setup_ui()
 
     def setup_ui(self):
         """Configura a interface da tabela"""
         self.setColumnCount(1)
-        self.setHorizontalHeaderLabels(["Novos Nomes"])
+        self.setHorizontalHeaderLabels([self.language_manager.get_text("preview")])
         self.horizontalHeader().setStretchLastSection(True)
         self.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.setSelectionMode(QAbstractItemView.SingleSelection)
@@ -28,12 +30,10 @@ class CSVTable(QTableWidget):
 
     def set_data(self, data):
         """Define os dados na tabela"""
-        self.setRowCount(0)
-        for name in data:
-            row_position = self.rowCount()
-            self.insertRow(row_position)
+        self.setRowCount(len(data))
+        for i, name in enumerate(data):
             item = QTableWidgetItem(name)
-            self.setItem(row_position, 0, item)
+            self.setItem(i, 0, item)
 
     def handle_item_changed(self, item):
         """Lida com mudanças nos itens da tabela"""
@@ -45,11 +45,12 @@ class CSVTable(QTableWidget):
         menu = QMenu()
         
         # Ações do menu
-        remove_action = QAction("Remover", self)
-        remove_action.triggered.connect(self.trigger_remove)
+        remove_action = QAction(self.language_manager.get_text("remove"), self)
         menu.addAction(remove_action)
         
-        menu.exec_(self.mapToGlobal(position))
+        action = menu.exec_(self.viewport().mapToGlobal(position))
+        if action == remove_action:
+            self.trigger_remove()
 
     def trigger_remove(self):
         """Remove a linha selecionada"""
@@ -70,19 +71,25 @@ class CSVTable(QTableWidget):
         if current_row < self.rowCount() - 1:
             self.move_row(current_row, current_row + 1)
 
-    def move_row(self, current_row, new_row):
+    def move_row(self, current_index, new_index):
         """Move uma linha para uma nova posição"""
-        # Move os itens
-        item = self.takeItem(current_row, 0)
-        self.insertRow(new_row)
-        self.setItem(new_row, 0, item)
-        self.removeRow(current_row)
-        
-        # Seleciona a nova posição
-        self.setCurrentCell(new_row, 0)
-        
-        # Emite sinal
-        self.row_moved.emit(current_row, new_row)
+        if 0 <= current_index < self.rowCount() and 0 <= new_index < self.rowCount():
+            # Salva os itens
+            current_item = self.takeItem(current_index, 0)
+            new_item = self.takeItem(new_index, 0)
+            
+            # Insere os itens nas novas posições
+            self.setItem(new_index, 0, current_item)
+            self.setItem(current_index, 0, new_item)
+            
+            # Atualiza a seleção
+            self.setCurrentCell(new_index, 0)
+            
+            # Emite o sinal
+            self.row_moved.emit(current_index, new_index)
+            
+            return True
+        return False
 
     def get_data(self):
         """Retorna os dados da tabela"""

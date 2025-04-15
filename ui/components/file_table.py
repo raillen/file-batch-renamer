@@ -1,6 +1,7 @@
 from PyQt5.QtWidgets import (QTableWidget, QTableWidgetItem, QMenu, QAction,
                             QAbstractItemView)
 from PyQt5.QtCore import Qt, pyqtSignal
+from core.language_manager import LanguageManager
 
 class FileTable(QTableWidget):
     # Sinais
@@ -11,12 +12,13 @@ class FileTable(QTableWidget):
 
     def __init__(self, parent=None):
         super().__init__(parent)
+        self.language_manager = LanguageManager()
         self.setup_ui()
 
     def setup_ui(self):
         """Configura a interface da tabela"""
         self.setColumnCount(1)
-        self.setHorizontalHeaderLabels(["Arquivos na Pasta"])
+        self.setHorizontalHeaderLabels([self.language_manager.get_text("preview")])
         self.horizontalHeader().setStretchLastSection(True)
         self.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.setSelectionMode(QAbstractItemView.SingleSelection)
@@ -30,63 +32,55 @@ class FileTable(QTableWidget):
 
     def set_files(self, files):
         """Define os arquivos na tabela"""
-        self.setRowCount(0)
-        for file_name in files:
-            row_position = self.rowCount()
-            self.insertRow(row_position)
+        self.setRowCount(len(files))
+        for i, file_name in enumerate(files):
             item = QTableWidgetItem(file_name)
-            item.setData(Qt.UserRole, file_name)  # Armazena o nome original
-            self.setItem(row_position, 0, item)
+            self.setItem(i, 0, item)
 
     def handle_item_changed(self, item):
         """Lida com mudanças nos itens da tabela"""
         if item.column() == 0:  # Apenas na coluna de nomes
-            old_name = item.data(Qt.UserRole)
-            new_name = item.text().strip()
+            row = item.row()
+            old_name = self.item(row, 0).text()
+            new_name = item.text()
             
-            if new_name and new_name != old_name:
+            if old_name != new_name:
                 self.file_renamed.emit(old_name, new_name)
-                item.setData(Qt.UserRole, new_name)  # Atualiza o nome armazenado
 
     def handle_selection_changed(self):
         """Lida com mudanças na seleção"""
         selected_items = self.selectedItems()
         if selected_items:
-            file_name = selected_items[0].text()
-            self.file_selected.emit(file_name)
+            self.file_selected.emit(selected_items[0].text())
 
     def show_context_menu(self, position):
         """Mostra o menu de contexto"""
         menu = QMenu()
         
         # Ações do menu
-        locate_action = QAction("Localizar arquivo na pasta", self)
-        locate_action.triggered.connect(self.trigger_locate)
-        menu.addAction(locate_action)
+        locate_action = menu.addAction(self.language_manager.get_text("locate"))
+        delete_action = menu.addAction(self.language_manager.get_text("delete"))
+        rename_action = menu.addAction(self.language_manager.get_text("rename"))
         
-        delete_action = QAction("Deletar arquivo", self)
-        delete_action.triggered.connect(self.trigger_delete)
-        menu.addAction(delete_action)
-        
-        rename_action = QAction("Renomear arquivo", self)
-        rename_action.triggered.connect(self.trigger_rename)
-        menu.addAction(rename_action)
-        
-        menu.exec_(self.mapToGlobal(position))
+        action = menu.exec_(self.viewport().mapToGlobal(position))
+        if action == locate_action:
+            self.trigger_locate()
+        elif action == delete_action:
+            self.trigger_delete()
+        elif action == rename_action:
+            self.trigger_rename()
 
     def trigger_locate(self):
         """Emite sinal para localizar arquivo"""
         selected_items = self.selectedItems()
         if selected_items:
-            file_name = selected_items[0].text()
-            self.file_located.emit(file_name)
+            self.file_located.emit(selected_items[0].text())
 
     def trigger_delete(self):
         """Emite sinal para deletar arquivo"""
         selected_items = self.selectedItems()
         if selected_items:
-            file_name = selected_items[0].text()
-            self.file_deleted.emit(file_name)
+            self.file_deleted.emit(selected_items[0].text())
 
     def trigger_rename(self):
         """Inicia edição do item selecionado"""
@@ -106,13 +100,19 @@ class FileTable(QTableWidget):
         if current_row < self.rowCount() - 1:
             self.move_row(current_row, current_row + 1)
 
-    def move_row(self, current_row, new_row):
+    def move_row(self, current_index, new_index):
         """Move uma linha para uma nova posição"""
-        # Move os itens
-        item = self.takeItem(current_row, 0)
-        self.insertRow(new_row)
-        self.setItem(new_row, 0, item)
-        self.removeRow(current_row)
-        
-        # Seleciona a nova posição
-        self.setCurrentCell(new_row, 0) 
+        if 0 <= current_index < self.rowCount() and 0 <= new_index < self.rowCount():
+            # Salva os itens
+            current_item = self.takeItem(current_index, 0)
+            new_item = self.takeItem(new_index, 0)
+            
+            # Insere os itens nas novas posições
+            self.setItem(new_index, 0, current_item)
+            self.setItem(current_index, 0, new_item)
+            
+            # Atualiza a seleção
+            self.setCurrentCell(new_index, 0)
+            
+            return True
+        return False 

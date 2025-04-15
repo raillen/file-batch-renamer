@@ -1,35 +1,67 @@
-# Byte-compiled / optimized / DLL files
+# Python
 __pycache__/
 *.py[cod]
 *$py.class
-
-# Distribution / packaging
-dist/
+*.so
+.Python
 build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
 *.egg-info/
+.installed.cfg
+*.egg
 
-# Virtual environments
+# PyInstaller
+*.manifest
+*.spec
+
+# Installer
+installer/
+*.iss
+
+# Virtual Environment
 venv/
 env/
-.env/
+ENV/
 
-# IDE specific files
-.vscode/
+# IDE
 .idea/
+.vscode/
 *.swp
 *.swo
+.DS_Store
 
-# Logs and databases
+# Logs
 *.log
-*.sqlite
-*.db
+logs/
+
+# Arquivos temporários
+*.tmp
+*.temp
+*.bak
+*.backup
+
+# Arquivos de configuração local
+config.ini
+.env
+
+# Arquivos de histórico
+rename_history.json
+
+# Distribution / packaging
+*.egg-info/
 
 # Arquivos de sistema
-.DS_Store
 Thumbs.db
-
-# Arquivos do projeto
-rename_history.json
 
 # Arquivos de dados
 *.csv
@@ -50,6 +82,6 @@ rename_history.json
 *.tiff
 *.webp
 
-# Arquivos do sistema
+# Arquivos de sistema
 .DS_Store
 Thumbs.db 

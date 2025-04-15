@@ -1,60 +1,74 @@
-# Renomeador em Lote
+# BatchRenamer
 
-Um aplicativo para renomear arquivos em lote usando um arquivo CSV como fonte de novos nomes.
+Um aplicativo para renomear arquivos em lote usando um arquivo CSV.
 
 ## Funcionalidades
 
-- Carregar arquivos de uma pasta
-- Carregar nomes de um arquivo CSV
-- Visualizar arquivos (imagens, PDFs e textos)
-- Renomear arquivos em lote
-- Desfazer renomeações
-- Filtrar arquivos por extensão
-- Buscar arquivos e nomes
-- Mover arquivos e nomes para cima/baixo
-- Abrir arquivos com aplicativo padrão
-- Localizar arquivos no Explorer
+- Renomear múltiplos arquivos de uma vez usando um arquivo CSV
+- Visualização prévia de arquivos (imagens, PDFs e textos)
+- Suporte a diferentes tipos de arquivo
+- Filtro por extensões
+- Histórico de renomeações com opção de desfazer
+- Interface em português, inglês e espanhol
+- Busca em tempo real nos arquivos e no CSV
 
 ## Requisitos
 
-- Python 3.6 ou superior
+- Python 3.8 ou superior
 - PyQt5
 - PyMuPDF (para visualização de PDFs)
 
 ## Instalação
 
-1. Clone o repositório
+1. Clone o repositório:
+```bash
+git clone https://github.com/seu-usuario/batch-renamer.git
+cd batch-renamer
+```
+
 2. Instale as dependências:
 ```bash
 pip install -r requirements.txt
 ```
 
-## Uso
-
-1. Execute o aplicativo:
+3. Execute o programa:
 ```bash
 python main.py
 ```
 
-2. Clique em "Abrir CSV" para carregar um arquivo CSV com os novos nomes
-3. Clique em "Abrir Pasta" para selecionar a pasta com os arquivos a serem renomeados
-4. Opcionalmente, filtre os arquivos por extensão
-5. Clique em "Renomear Arquivos" para executar a renomeação
-6. Use "Desfazer Renomeação" para reverter a última operação
+## Como Usar
 
-## Formato do CSV
+1. Clique em "Abrir CSV" para carregar um arquivo CSV com os novos nomes
+2. Clique em "Abrir Pasta" para selecionar a pasta com os arquivos a serem renomeados
+3. Opcionalmente, filtre as extensões dos arquivos
+4. Clique em "Renomear Arquivos" para executar a renomeação
+5. Use "Desfazer Renomeação" para reverter a última operação
 
-O arquivo CSV deve conter um nome por linha, sem cabeçalho. Exemplo:
+## Estrutura do Projeto
+
 ```
-novo_nome1
-novo_nome2
-novo_nome3
+batch-renamer/
+├── core/               # Lógica de negócios
+│   ├── file_manager.py
+│   ├── csv_manager.py
+│   ├── history_manager.py
+│   ├── preview_manager.py
+│   └── language_manager.py
+├── ui/                 # Interface do usuário
+│   ├── main_window.py
+│   └── components/
+│       ├── file_table.py
+│       ├── csv_table.py
+│       └── preview_panel.py
+├── main.py            # Ponto de entrada
+├── requirements.txt   # Dependências
+└── README.md         # Documentação
 ```
-
-## Histórico
-
-O aplicativo mantém um histórico das operações de renomeação em um arquivo JSON, permitindo desfazer as alterações se necessário.
 
 ## Licença
 
-Este projeto está licenciado sob a licença MIT.
+Este projeto está licenciado sob a licença MIT - veja o arquivo [LICENSE](LICENSE) para detalhes.
+
+## Contribuição
+
+Contribuições são bem-vindas! Por favor, leia as [diretrizes de contribuição](CONTRIBUTING.md) antes de enviar um pull request.
